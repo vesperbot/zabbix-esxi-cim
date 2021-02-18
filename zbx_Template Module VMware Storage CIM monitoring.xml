@@ -1,0 +1,639 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export>
+    <version>5.0</version>
+    <date>2021-02-18T12:55:35Z</date>
+    <groups>
+        <group>
+            <name>Templates/Modules</name>
+        </group>
+    </groups>
+    <templates>
+        <template>
+            <template>Template Module VMware CIM storage monitoring</template>
+            <name>Template Module VMware CIM storage monitoring</name>
+            <description>Template module to monitor local storage by CIM, aimed at VMware, might work on other systems exposing CIM_StorageVolume, CIM_DiskDrive, CIM_Controller.&#13;
+Default namespace: root/cimv2. Known Adaptec namespace that has these classes: root/pmc/arc/smi_15</description>
+            <groups>
+                <group>
+                    <name>Templates/Modules</name>
+                </group>
+            </groups>
+            <applications>
+                <application>
+                    <name>Storage devices</name>
+                </application>
+                <application>
+                    <name>Storage volumes</name>
+                </application>
+            </applications>
+            <discovery_rules>
+                <discovery_rule>
+                    <name>CIM disk drives discovery</name>
+                    <type>EXTERNAL</type>
+                    <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n',{$CIM_STORAGE_NAMESPACE},'-c','CIM_DiskDrive','--discovery']</key>
+                    <delay>1h</delay>
+                    <lifetime>7d</lifetime>
+                    <item_prototypes>
+                        <item_prototype>
+                            <name>Physical drive {#ITEMNAME} hardware errors</name>
+                            <type>DEPENDENT</type>
+                            <key>cim.storage.drive.hardwareerrors[{#ITEMNAME}]</key>
+                            <delay>0</delay>
+                            <history>30d</history>
+                            <trends>0</trends>
+                            <applications>
+                                <application>
+                                    <name>Storage devices</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>REGEX</type>
+                                    <params>HardwareErrors=([^,]*)(\,|$)
+\1</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n',{$CIM_STORAGE_NAMESPACE},'-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Physical drive {#ITEMNAME} health status</name>
+                            <type>DEPENDENT</type>
+                            <key>cim.storage.drive.health[{#ITEMNAME}]</key>
+                            <delay>0</delay>
+                            <history>30d</history>
+                            <trends>0</trends>
+                            <applications>
+                                <application>
+                                    <name>Storage devices</name>
+                                </application>
+                            </applications>
+                            <valuemap>
+                                <name>VMware CIM - Health Status</name>
+                            </valuemap>
+                            <preprocessing>
+                                <step>
+                                    <type>REGEX</type>
+                                    <params>HealthState=([^,]*)(\,|$)
+\1</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n',{$CIM_STORAGE_NAMESPACE},'-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
+                            </master_item>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <expression>{last()}&gt;5</expression>
+                                    <name>Physical drive {#ITEMNAME} had failed!</name>
+                                    <priority>HIGH</priority>
+                                    <description>Value mapping says condition should transition from 5 to 10 all the way to 30, this needs more checks, as hard drives are normally sit at 5 for years. As a crude solution, throwing &quot;up&quot; if state went awry should do.</description>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Physical drive {#ITEMNAME} media errors</name>
+                            <type>DEPENDENT</type>
+                            <key>cim.storage.drive.mediumerrors[{#ITEMNAME}]</key>
+                            <delay>0</delay>
+                            <history>30d</history>
+                            <trends>0</trends>
+                            <applications>
+                                <application>
+                                    <name>Storage devices</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>REGEX</type>
+                                    <params>MediumErrors=([^,]*)(\,|$)
+\1</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n',{$CIM_STORAGE_NAMESPACE},'-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Physical drive {#ITEMNAME} operational status</name>
+                            <type>DEPENDENT</type>
+                            <key>cim.storage.drive.operational_status[{#ITEMNAME}]</key>
+                            <delay>0</delay>
+                            <history>30d</history>
+                            <trends>0</trends>
+                            <applications>
+                                <application>
+                                    <name>Storage devices</name>
+                                </application>
+                            </applications>
+                            <valuemap>
+                                <name>VMware CIM - Operational Status</name>
+                            </valuemap>
+                            <preprocessing>
+                                <step>
+                                    <type>REGEX</type>
+                                    <params>OperationalStatus=([^,]*)(\,|$)
+\1</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n',{$CIM_STORAGE_NAMESPACE},'-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
+                            </master_item>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <expression>{last()}&lt;&gt;2</expression>
+                                    <name>Physical drive {#ITEMNAME} operational status is not OK</name>
+                                    <priority>WARNING</priority>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Physical drive {#ITEMNAME} SMART errors flag</name>
+                            <type>DEPENDENT</type>
+                            <key>cim.storage.drive.smart_flag[{#ITEMNAME}]</key>
+                            <delay>0</delay>
+                            <history>30d</history>
+                            <trends>0</trends>
+                            <applications>
+                                <application>
+                                    <name>Storage devices</name>
+                                </application>
+                            </applications>
+                            <valuemap>
+                                <name>Alarm state</name>
+                            </valuemap>
+                            <preprocessing>
+                                <step>
+                                    <type>REGEX</type>
+                                    <params>SmartErrorFlag=([^,]*)(\,|$)
+\1</params>
+                                </step>
+                                <step>
+                                    <type>BOOL_TO_DECIMAL</type>
+                                    <params/>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n',{$CIM_STORAGE_NAMESPACE},'-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Physical drive {#ITEMNAME} SSD SMART errors flag</name>
+                            <type>DEPENDENT</type>
+                            <key>cim.storage.drive.ssd_smart_flag[{#ITEMNAME}]</key>
+                            <delay>0</delay>
+                            <history>30d</history>
+                            <trends>0</trends>
+                            <applications>
+                                <application>
+                                    <name>Storage devices</name>
+                                </application>
+                            </applications>
+                            <valuemap>
+                                <name>Alarm state</name>
+                            </valuemap>
+                            <preprocessing>
+                                <step>
+                                    <type>REGEX</type>
+                                    <params>SSDSmartTripWearout=([^,]*)(\,|$)
+\1</params>
+                                </step>
+                                <step>
+                                    <type>BOOL_TO_DECIMAL</type>
+                                    <params/>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n',{$CIM_STORAGE_NAMESPACE},'-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Physical drive {#ITEMNAME} SSD temperature</name>
+                            <type>DEPENDENT</type>
+                            <key>cim.storage.drive.ssd_temperature[{#ITEMNAME}]</key>
+                            <delay>0</delay>
+                            <trends>0</trends>
+                            <units>degrees</units>
+                            <applications>
+                                <application>
+                                    <name>Storage devices</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>REGEX</type>
+                                    <params>CurrentTemperature=([^,]*)(\,|$)
+\1</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n',{$CIM_STORAGE_NAMESPACE},'-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Physical drive {#ITEMNAME} SSD remaining usage</name>
+                            <type>DEPENDENT</type>
+                            <key>cim.storage.drive.ssd_usage_left[{#ITEMNAME}]</key>
+                            <delay>0</delay>
+                            <value_type>FLOAT</value_type>
+                            <units>%</units>
+                            <applications>
+                                <application>
+                                    <name>Storage devices</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>REGEX</type>
+                                    <params>UsageRemaining=([^,]*)(\,|$)
+\1</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n',{$CIM_STORAGE_NAMESPACE},'-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Physical drive {#ITEMNAME} temperature</name>
+                            <type>DEPENDENT</type>
+                            <key>cim.storage.drive.temperature[{#ITEMNAME}]</key>
+                            <delay>0</delay>
+                            <trends>0</trends>
+                            <units>degrees</units>
+                            <applications>
+                                <application>
+                                    <name>Storage devices</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>REGEX</type>
+                                    <params>RecentTemperature=([^,]*)(\,|$)
+\1</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n',{$CIM_STORAGE_NAMESPACE},'-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Physical drive {#ITEMNAME} supports temperature</name>
+                            <type>DEPENDENT</type>
+                            <key>cim.storage.drive.temperature_supported[{#ITEMNAME}]</key>
+                            <delay>0</delay>
+                            <history>30d</history>
+                            <trends>0</trends>
+                            <description>If this is 0, reading of &quot;temperature&quot; is bogus. &quot;SSD temperature&quot; is not dependent on this flag and is assumed supported if the drive is an SSD.</description>
+                            <applications>
+                                <application>
+                                    <name>Storage devices</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>REGEX</type>
+                                    <params>TemperatureIsSupported=([^,]*)(\,|$)
+\1</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n',{$CIM_STORAGE_NAMESPACE},'-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Physical drive {#ITEMNAME} full class state</name>
+                            <type>EXTERNAL</type>
+                            <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n',{$CIM_STORAGE_NAMESPACE},'-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
+                            <delay>10m</delay>
+                            <history>30d</history>
+                            <trends>0</trends>
+                            <value_type>CHAR</value_type>
+                            <description>Contains class dump of a certain disk drive entity. Values inside may differ depending on hardware, however, wbemcli returns first the path of queried instance then space then data, so we're stripping path and space in preprocessing.&#13;
+Using CIM_DiskDrive as base class, for better portability. Yet, while discovery does work, getting instances requires exact class - grabbed it with discovery script into {#ITEMCLASS}, used here</description>
+                            <applications>
+                                <application>
+                                    <name>Storage devices</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>REGEX</type>
+                                    <params>^[^ ]* (.*)
+\1</params>
+                                </step>
+                            </preprocessing>
+                        </item_prototype>
+                    </item_prototypes>
+                    <trigger_prototypes>
+                        <trigger_prototype>
+                            <expression>({Template Module VMware CIM storage monitoring:cim.storage.drive.temperature_supported[{#ITEMNAME}].last()}=1 and {Template Module VMware CIM storage monitoring:cim.storage.drive.temperature[{#ITEMNAME}].last()}&gt;{$HDD_TEMP_WARN}) or ({Template Module VMware CIM storage monitoring:cim.storage.drive.ssd_temperature[{#ITEMNAME}].nodata(1h)}=0 and {Template Module VMware CIM storage monitoring:cim.storage.drive.ssd_temperature[{#ITEMNAME}].last()}&gt;{$SSD_TEMP_WARN})</expression>
+                            <name>Physical drive {#ITEMNAME} is overheating</name>
+                            <priority>WARNING</priority>
+                        </trigger_prototype>
+                        <trigger_prototype>
+                            <expression>{Template Module VMware CIM storage monitoring:cim.storage.drive.mediumerrors[{#ITEMNAME}].last()}&gt;0 or {Template Module VMware CIM storage monitoring:cim.storage.drive.hardwareerrors[{#ITEMNAME}].last()}&gt;0</expression>
+                            <name>Physical drive {#ITEMNAME} media/hardware errors detected</name>
+                            <priority>AVERAGE</priority>
+                        </trigger_prototype>
+                        <trigger_prototype>
+                            <expression>({Template Module VMware CIM storage monitoring:cim.storage.drive.ssd_smart_flag[{#ITEMNAME}].nodata(1h)}=0 and {Template Module VMware CIM storage monitoring:cim.storage.drive.ssd_smart_flag[{#ITEMNAME}].last()}=1) or ({Template Module VMware CIM storage monitoring:cim.storage.drive.smart_flag[{#ITEMNAME}].nodata(1h)}=0 and {Template Module VMware CIM storage monitoring:cim.storage.drive.smart_flag[{#ITEMNAME}].last()}=1)</expression>
+                            <name>Physical drive {#ITEMNAME} triggered a SMART flag</name>
+                            <priority>AVERAGE</priority>
+                        </trigger_prototype>
+                    </trigger_prototypes>
+                </discovery_rule>
+                <discovery_rule>
+                    <name>CIM storage volumes discovery</name>
+                    <type>EXTERNAL</type>
+                    <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n',{$CIM_STORAGE_NAMESPACE},'-c','CIM_StorageVolume','--discovery']</key>
+                    <delay>1h</delay>
+                    <lifetime>7d</lifetime>
+                    <item_prototypes>
+                        <item_prototype>
+                            <name>Storage volume {#ITEMNAME} health state</name>
+                            <type>DEPENDENT</type>
+                            <key>cim.storage.volume.health[{#ITEMNAME}]</key>
+                            <delay>0</delay>
+                            <trends>0</trends>
+                            <applications>
+                                <application>
+                                    <name>Storage volumes</name>
+                                </application>
+                            </applications>
+                            <valuemap>
+                                <name>VMware CIM - Health Status</name>
+                            </valuemap>
+                            <preprocessing>
+                                <step>
+                                    <type>REGEX</type>
+                                    <params>HealthState=([^,]*)(\,|$)
+\1</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n','{$CIM_STORAGE_NAMESPACE}','-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
+                            </master_item>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <expression>{last()}&gt;=10</expression>
+                                    <name>Storage volume {#ITEMNAME} is degraded</name>
+                                    <priority>HIGH</priority>
+                                    <description>10 = degraded. Anything more, and data loss can/did happen.</description>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Storage volume {#ITEMNAME} status details</name>
+                            <type>DEPENDENT</type>
+                            <key>cim.storage.volume.health_details[{#ITEMNAME}]</key>
+                            <delay>0</delay>
+                            <trends>0</trends>
+                            <value_type>CHAR</value_type>
+                            <applications>
+                                <application>
+                                    <name>Storage volumes</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>REGEX</type>
+                                    <params>StatusDescriptions=([^,]*)(\,|$)
+\1</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n','{$CIM_STORAGE_NAMESPACE}','-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Storage volume {#ITEMNAME} operational status</name>
+                            <type>DEPENDENT</type>
+                            <key>cim.storage.volume.operational_status[{#ITEMNAME}]</key>
+                            <delay>0</delay>
+                            <trends>0</trends>
+                            <applications>
+                                <application>
+                                    <name>Storage volumes</name>
+                                </application>
+                            </applications>
+                            <valuemap>
+                                <name>VMware CIM - Operational Status</name>
+                            </valuemap>
+                            <preprocessing>
+                                <step>
+                                    <type>REGEX</type>
+                                    <params>OperationalStatus=([^,]*)(\,|$)
+\1</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n','{$CIM_STORAGE_NAMESPACE}','-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
+                            </master_item>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <expression>{last()}&lt;&gt;2</expression>
+                                    <name>Storage volume {#ITEMNAME} operating abnormally</name>
+                                    <priority>WARNING</priority>
+                                    <description>2 = OK, anything else signifies some abnormal state, review value mappings to check what happened.</description>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Storage volume {#ITEMNAME} full status</name>
+                            <type>EXTERNAL</type>
+                            <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n','{$CIM_STORAGE_NAMESPACE}','-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
+                            <delay>10m</delay>
+                            <history>30d</history>
+                            <trends>0</trends>
+                            <value_type>CHAR</value_type>
+                            <applications>
+                                <application>
+                                    <name>Storage volumes</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>REGEX</type>
+                                    <params>^[^ ]* (.*)
+\1</params>
+                                </step>
+                            </preprocessing>
+                        </item_prototype>
+                    </item_prototypes>
+                </discovery_rule>
+            </discovery_rules>
+            <macros>
+                <macro>
+                    <macro>{$CIM_PASSWORD}</macro>
+                    <value>{$PASSWORD}</value>
+                    <description>Password for CIM_USERNAME</description>
+                </macro>
+                <macro>
+                    <macro>{$CIM_STORAGE_NAMESPACE}</macro>
+                    <value>root/cimv2</value>
+                    <description>The namespace that contains required classes (CIM_DiskDrive, CIM_Controller, CIM_StorageVolume) provided by server. Update per server if default namespace is devoid of these, or devoid of instances.</description>
+                </macro>
+                <macro>
+                    <macro>{$CIM_USERNAME}</macro>
+                    <value>{$USERNAME}</value>
+                    <description>User name to access CIM data</description>
+                </macro>
+                <macro>
+                    <macro>{$HDD_TEMP_WARN}</macro>
+                    <value>60</value>
+                    <description>Warning temperature thershold for HDDs</description>
+                </macro>
+                <macro>
+                    <macro>{$SSD_TEMP_WARN}</macro>
+                    <value>50</value>
+                    <description>Warning temperature threshold for SSDs</description>
+                </macro>
+            </macros>
+        </template>
+    </templates>
+    <value_maps>
+        <value_map>
+            <name>Alarm state</name>
+            <mappings>
+                <mapping>
+                    <value>0</value>
+                    <newvalue>Ok</newvalue>
+                </mapping>
+                <mapping>
+                    <value>1</value>
+                    <newvalue>Alarm</newvalue>
+                </mapping>
+            </mappings>
+        </value_map>
+        <value_map>
+            <name>VMware CIM - Health Status</name>
+            <mappings>
+                <mapping>
+                    <value>-1</value>
+                    <newvalue>Unsupported</newvalue>
+                </mapping>
+                <mapping>
+                    <value>0</value>
+                    <newvalue>Unknown</newvalue>
+                </mapping>
+                <mapping>
+                    <value>5</value>
+                    <newvalue>OK</newvalue>
+                </mapping>
+                <mapping>
+                    <value>10</value>
+                    <newvalue>Degraded</newvalue>
+                </mapping>
+                <mapping>
+                    <value>15</value>
+                    <newvalue>Minor</newvalue>
+                </mapping>
+                <mapping>
+                    <value>20</value>
+                    <newvalue>Major</newvalue>
+                </mapping>
+                <mapping>
+                    <value>25</value>
+                    <newvalue>Critical</newvalue>
+                </mapping>
+                <mapping>
+                    <value>30</value>
+                    <newvalue>Non-recoverable error</newvalue>
+                </mapping>
+            </mappings>
+        </value_map>
+        <value_map>
+            <name>VMware CIM - Operational Status</name>
+            <mappings>
+                <mapping>
+                    <value>-1</value>
+                    <newvalue>Unsupported</newvalue>
+                </mapping>
+                <mapping>
+                    <value>0</value>
+                    <newvalue>Unknown</newvalue>
+                </mapping>
+                <mapping>
+                    <value>1</value>
+                    <newvalue>Other</newvalue>
+                </mapping>
+                <mapping>
+                    <value>2</value>
+                    <newvalue>OK</newvalue>
+                </mapping>
+                <mapping>
+                    <value>3</value>
+                    <newvalue>Degraded</newvalue>
+                </mapping>
+                <mapping>
+                    <value>4</value>
+                    <newvalue>Stressed</newvalue>
+                </mapping>
+                <mapping>
+                    <value>5</value>
+                    <newvalue>Predictive failure</newvalue>
+                </mapping>
+                <mapping>
+                    <value>6</value>
+                    <newvalue>Error</newvalue>
+                </mapping>
+                <mapping>
+                    <value>7</value>
+                    <newvalue>Non-recoverable error</newvalue>
+                </mapping>
+                <mapping>
+                    <value>8</value>
+                    <newvalue>Starting</newvalue>
+                </mapping>
+                <mapping>
+                    <value>9</value>
+                    <newvalue>Stopping</newvalue>
+                </mapping>
+                <mapping>
+                    <value>10</value>
+                    <newvalue>Stopped</newvalue>
+                </mapping>
+                <mapping>
+                    <value>11</value>
+                    <newvalue>In service</newvalue>
+                </mapping>
+                <mapping>
+                    <value>12</value>
+                    <newvalue>No contact</newvalue>
+                </mapping>
+                <mapping>
+                    <value>13</value>
+                    <newvalue>Lost communication</newvalue>
+                </mapping>
+                <mapping>
+                    <value>14</value>
+                    <newvalue>Aborted</newvalue>
+                </mapping>
+                <mapping>
+                    <value>15</value>
+                    <newvalue>Dormant</newvalue>
+                </mapping>
+                <mapping>
+                    <value>16</value>
+                    <newvalue>Supporting entity in error</newvalue>
+                </mapping>
+                <mapping>
+                    <value>17</value>
+                    <newvalue>Completed</newvalue>
+                </mapping>
+                <mapping>
+                    <value>18</value>
+                    <newvalue>Power mode</newvalue>
+                </mapping>
+                <mapping>
+                    <value>19</value>
+                    <newvalue>DMTF reserved</newvalue>
+                </mapping>
+                <mapping>
+                    <value>20</value>
+                    <newvalue>Vendor reserved</newvalue>
+                </mapping>
+            </mappings>
+        </value_map>
+    </value_maps>
+</zabbix_export>
