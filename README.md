@@ -2,7 +2,7 @@
 Zabbix template to monitor VMware ESXi storage by CIM interface. Customizable.
 
 ## Installation
-- On a Zabbix server install `python-pywbem` (or `python3-pywbem`, whichever is available). PyWBEM library provides a CLI interface that is used here.
+- On a Zabbix server install `sblim-wbemcli`. This script is using that exact tool.
 - On a ESXi to monitor, create user that can interact with CIM. Available for ESXi 5.5+, tested on 6.0 and 6.7. These commands should be invoked via SSH on your ESXi server.
     ```bash
     /usr/lib/vmware/auth/bin/adduser -s /sbin/nologin -D -H zabbix -G root
