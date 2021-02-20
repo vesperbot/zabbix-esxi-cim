@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>5.0</version>
-    <date>2021-02-18T12:55:35Z</date>
+    <date>2021-02-20T11:25:45Z</date>
     <groups>
         <group>
             <name>Templates/Modules</name>
@@ -9,9 +9,9 @@
     </groups>
     <templates>
         <template>
-            <template>Template Module VMware CIM storage monitoring</template>
-            <name>Template Module VMware CIM storage monitoring</name>
-            <description>Template module to monitor local storage by CIM, aimed at VMware, might work on other systems exposing CIM_StorageVolume, CIM_DiskDrive, CIM_Controller.&#13;
+            <template>Template Module VMware CIM storage monitoring v2</template>
+            <name>Template Module VMware CIM storage monitoring v2</name>
+            <description>Template module to monitor local storage by CIM, using Python's pywbem library. Aimed at VMware, might work on other systems exposing CIM_StorageVolume, CIM_DiskDrive, CIM_Controller.&#13;
 Default namespace: root/cimv2. Known Adaptec namespace that has these classes: root/pmc/arc/smi_15</description>
             <groups>
                 <group>
@@ -28,9 +28,124 @@ Default namespace: root/cimv2. Known Adaptec namespace that has these classes: r
             </applications>
             <discovery_rules>
                 <discovery_rule>
+                    <name>CIM storage volumes discovery</name>
+                    <type>EXTERNAL</type>
+                    <key>pywbem-zabbix-wrapper.py[-u,{$CIM_USERNAME},-p,{$CIM_PASSWORD},-s,{HOST.IP},-n,{$CIM_STORAGE_NAMESPACE},-c,&quot;CIM_StorageVolume&quot;,--zabbix]</key>
+                    <delay>1h</delay>
+                    <lifetime>7d</lifetime>
+                    <item_prototypes>
+                        <item_prototype>
+                            <name>Storage volume {#INSTANCENAME} health state</name>
+                            <type>DEPENDENT</type>
+                            <key>cim.storage.volume.health[{#INSTANCENAME}]</key>
+                            <delay>0</delay>
+                            <trends>0</trends>
+                            <applications>
+                                <application>
+                                    <name>Storage volumes</name>
+                                </application>
+                            </applications>
+                            <valuemap>
+                                <name>VMware CIM - Health Status</name>
+                            </valuemap>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.HealthState</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>pywbem-zabbix-wrapper.py[-u,{$CIM_USERNAME},-p,{$CIM_PASSWORD},-s,{HOST.IP},-n,{$CIM_STORAGE_NAMESPACE},-c,{#CLASSNAME},&quot;-i&quot;,{#CLASSPATH}]</key>
+                            </master_item>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <expression>{last()}&gt;=10</expression>
+                                    <name>Storage volume {#INSTANCENAME} is degraded</name>
+                                    <priority>HIGH</priority>
+                                    <description>10 = degraded. Anything more, and data loss can/did happen.</description>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Storage volume {#INSTANCENAME} status details</name>
+                            <type>DEPENDENT</type>
+                            <key>cim.storage.volume.health_details[{#INSTANCENAME}]</key>
+                            <delay>0</delay>
+                            <trends>0</trends>
+                            <value_type>CHAR</value_type>
+                            <applications>
+                                <application>
+                                    <name>Storage volumes</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.StatusDescriptions</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>pywbem-zabbix-wrapper.py[-u,{$CIM_USERNAME},-p,{$CIM_PASSWORD},-s,{HOST.IP},-n,{$CIM_STORAGE_NAMESPACE},-c,{#CLASSNAME},&quot;-i&quot;,{#CLASSPATH}]</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Storage volume {#INSTANCENAME} operational status</name>
+                            <type>DEPENDENT</type>
+                            <key>cim.storage.volume.operational_status[{#INSTANCENAME}]</key>
+                            <delay>0</delay>
+                            <trends>0</trends>
+                            <applications>
+                                <application>
+                                    <name>Storage volumes</name>
+                                </application>
+                            </applications>
+                            <valuemap>
+                                <name>VMware CIM - Operational Status</name>
+                            </valuemap>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.OperationalStatus</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>pywbem-zabbix-wrapper.py[-u,{$CIM_USERNAME},-p,{$CIM_PASSWORD},-s,{HOST.IP},-n,{$CIM_STORAGE_NAMESPACE},-c,{#CLASSNAME},&quot;-i&quot;,{#CLASSPATH}]</key>
+                            </master_item>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <expression>{last()}&lt;&gt;2</expression>
+                                    <name>Storage volume {#INSTANCENAME} operating abnormally</name>
+                                    <priority>WARNING</priority>
+                                    <description>2 = OK, anything else signifies some abnormal state, review value mappings to check what happened.</description>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Storage volume {#INSTANCENAME} complete JSON data</name>
+                            <type>EXTERNAL</type>
+                            <key>pywbem-zabbix-wrapper.py[-u,{$CIM_USERNAME},-p,{$CIM_PASSWORD},-s,{HOST.IP},-n,{$CIM_STORAGE_NAMESPACE},-c,{#CLASSNAME},&quot;-i&quot;,{#CLASSPATH}]</key>
+                            <delay>10m</delay>
+                            <history>30d</history>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                            <applications>
+                                <application>
+                                    <name>Storage volumes</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$[0]</params>
+                                </step>
+                            </preprocessing>
+                        </item_prototype>
+                    </item_prototypes>
+                </discovery_rule>
+                <discovery_rule>
                     <name>CIM disk drives discovery</name>
                     <type>EXTERNAL</type>
-                    <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n',{$CIM_STORAGE_NAMESPACE},'-c','CIM_DiskDrive','--discovery']</key>
+                    <key>pywbem-zabbix-wrapper.py[-u,{$CIM_USERNAME},-p,{$CIM_PASSWORD},-s,{HOST.IP},-n,{$CIM_STORAGE_NAMESPACE},-c,CIM_DiskDrive,--zabbix]</key>
                     <delay>1h</delay>
                     <lifetime>7d</lifetime>
                     <item_prototypes>
@@ -48,13 +163,12 @@ Default namespace: root/cimv2. Known Adaptec namespace that has these classes: r
                             </applications>
                             <preprocessing>
                                 <step>
-                                    <type>REGEX</type>
-                                    <params>HardwareErrors=([^,]*)(\,|$)
-\1</params>
+                                    <type>JSONPATH</type>
+                                    <params>$.HardwareErrors</params>
                                 </step>
                             </preprocessing>
                             <master_item>
-                                <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n',{$CIM_STORAGE_NAMESPACE},'-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
+                                <key>pywbem-zabbix-wrapper.py[-u,{$CIM_USERNAME},-p,{$CIM_PASSWORD},-s,{HOST.IP},-n,{$CIM_STORAGE_NAMESPACE},-c,{#ITEMCLASS},-i,{#ITEMPATH}]</key>
                             </master_item>
                         </item_prototype>
                         <item_prototype>
@@ -74,13 +188,12 @@ Default namespace: root/cimv2. Known Adaptec namespace that has these classes: r
                             </valuemap>
                             <preprocessing>
                                 <step>
-                                    <type>REGEX</type>
-                                    <params>HealthState=([^,]*)(\,|$)
-\1</params>
+                                    <type>JSONPATH</type>
+                                    <params>$.HealthState</params>
                                 </step>
                             </preprocessing>
                             <master_item>
-                                <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n',{$CIM_STORAGE_NAMESPACE},'-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
+                                <key>pywbem-zabbix-wrapper.py[-u,{$CIM_USERNAME},-p,{$CIM_PASSWORD},-s,{HOST.IP},-n,{$CIM_STORAGE_NAMESPACE},-c,{#ITEMCLASS},-i,{#ITEMPATH}]</key>
                             </master_item>
                             <trigger_prototypes>
                                 <trigger_prototype>
@@ -105,13 +218,12 @@ Default namespace: root/cimv2. Known Adaptec namespace that has these classes: r
                             </applications>
                             <preprocessing>
                                 <step>
-                                    <type>REGEX</type>
-                                    <params>MediumErrors=([^,]*)(\,|$)
-\1</params>
+                                    <type>JSONPATH</type>
+                                    <params>$.MediumErrors</params>
                                 </step>
                             </preprocessing>
                             <master_item>
-                                <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n',{$CIM_STORAGE_NAMESPACE},'-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
+                                <key>pywbem-zabbix-wrapper.py[-u,{$CIM_USERNAME},-p,{$CIM_PASSWORD},-s,{HOST.IP},-n,{$CIM_STORAGE_NAMESPACE},-c,{#ITEMCLASS},-i,{#ITEMPATH}]</key>
                             </master_item>
                         </item_prototype>
                         <item_prototype>
@@ -131,13 +243,12 @@ Default namespace: root/cimv2. Known Adaptec namespace that has these classes: r
                             </valuemap>
                             <preprocessing>
                                 <step>
-                                    <type>REGEX</type>
-                                    <params>OperationalStatus=([^,]*)(\,|$)
-\1</params>
+                                    <type>JSONPATH</type>
+                                    <params>$.OperationalStatus</params>
                                 </step>
                             </preprocessing>
                             <master_item>
-                                <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n',{$CIM_STORAGE_NAMESPACE},'-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
+                                <key>pywbem-zabbix-wrapper.py[-u,{$CIM_USERNAME},-p,{$CIM_PASSWORD},-s,{HOST.IP},-n,{$CIM_STORAGE_NAMESPACE},-c,{#ITEMCLASS},-i,{#ITEMPATH}]</key>
                             </master_item>
                             <trigger_prototypes>
                                 <trigger_prototype>
@@ -164,9 +275,8 @@ Default namespace: root/cimv2. Known Adaptec namespace that has these classes: r
                             </valuemap>
                             <preprocessing>
                                 <step>
-                                    <type>REGEX</type>
-                                    <params>SmartErrorFlag=([^,]*)(\,|$)
-\1</params>
+                                    <type>JSONPATH</type>
+                                    <params>$.SmartErrorFlag</params>
                                 </step>
                                 <step>
                                     <type>BOOL_TO_DECIMAL</type>
@@ -174,7 +284,7 @@ Default namespace: root/cimv2. Known Adaptec namespace that has these classes: r
                                 </step>
                             </preprocessing>
                             <master_item>
-                                <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n',{$CIM_STORAGE_NAMESPACE},'-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
+                                <key>pywbem-zabbix-wrapper.py[-u,{$CIM_USERNAME},-p,{$CIM_PASSWORD},-s,{HOST.IP},-n,{$CIM_STORAGE_NAMESPACE},-c,{#ITEMCLASS},-i,{#ITEMPATH}]</key>
                             </master_item>
                         </item_prototype>
                         <item_prototype>
@@ -194,9 +304,8 @@ Default namespace: root/cimv2. Known Adaptec namespace that has these classes: r
                             </valuemap>
                             <preprocessing>
                                 <step>
-                                    <type>REGEX</type>
-                                    <params>SSDSmartTripWearout=([^,]*)(\,|$)
-\1</params>
+                                    <type>JSONPATH</type>
+                                    <params>$.SSDSmartTripWearout</params>
                                 </step>
                                 <step>
                                     <type>BOOL_TO_DECIMAL</type>
@@ -204,7 +313,7 @@ Default namespace: root/cimv2. Known Adaptec namespace that has these classes: r
                                 </step>
                             </preprocessing>
                             <master_item>
-                                <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n',{$CIM_STORAGE_NAMESPACE},'-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
+                                <key>pywbem-zabbix-wrapper.py[-u,{$CIM_USERNAME},-p,{$CIM_PASSWORD},-s,{HOST.IP},-n,{$CIM_STORAGE_NAMESPACE},-c,{#ITEMCLASS},-i,{#ITEMPATH}]</key>
                             </master_item>
                         </item_prototype>
                         <item_prototype>
@@ -221,13 +330,12 @@ Default namespace: root/cimv2. Known Adaptec namespace that has these classes: r
                             </applications>
                             <preprocessing>
                                 <step>
-                                    <type>REGEX</type>
-                                    <params>CurrentTemperature=([^,]*)(\,|$)
-\1</params>
+                                    <type>JSONPATH</type>
+                                    <params>$.CurrentTemperature</params>
                                 </step>
                             </preprocessing>
                             <master_item>
-                                <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n',{$CIM_STORAGE_NAMESPACE},'-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
+                                <key>pywbem-zabbix-wrapper.py[-u,{$CIM_USERNAME},-p,{$CIM_PASSWORD},-s,{HOST.IP},-n,{$CIM_STORAGE_NAMESPACE},-c,{#ITEMCLASS},-i,{#ITEMPATH}]</key>
                             </master_item>
                         </item_prototype>
                         <item_prototype>
@@ -244,13 +352,12 @@ Default namespace: root/cimv2. Known Adaptec namespace that has these classes: r
                             </applications>
                             <preprocessing>
                                 <step>
-                                    <type>REGEX</type>
-                                    <params>UsageRemaining=([^,]*)(\,|$)
-\1</params>
+                                    <type>JSONPATH</type>
+                                    <params>$.UsageRemaining</params>
                                 </step>
                             </preprocessing>
                             <master_item>
-                                <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n',{$CIM_STORAGE_NAMESPACE},'-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
+                                <key>pywbem-zabbix-wrapper.py[-u,{$CIM_USERNAME},-p,{$CIM_PASSWORD},-s,{HOST.IP},-n,{$CIM_STORAGE_NAMESPACE},-c,{#ITEMCLASS},-i,{#ITEMPATH}]</key>
                             </master_item>
                         </item_prototype>
                         <item_prototype>
@@ -267,13 +374,12 @@ Default namespace: root/cimv2. Known Adaptec namespace that has these classes: r
                             </applications>
                             <preprocessing>
                                 <step>
-                                    <type>REGEX</type>
-                                    <params>RecentTemperature=([^,]*)(\,|$)
-\1</params>
+                                    <type>JSONPATH</type>
+                                    <params>$.RecentTemperature</params>
                                 </step>
                             </preprocessing>
                             <master_item>
-                                <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n',{$CIM_STORAGE_NAMESPACE},'-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
+                                <key>pywbem-zabbix-wrapper.py[-u,{$CIM_USERNAME},-p,{$CIM_PASSWORD},-s,{HOST.IP},-n,{$CIM_STORAGE_NAMESPACE},-c,{#ITEMCLASS},-i,{#ITEMPATH}]</key>
                             </master_item>
                         </item_prototype>
                         <item_prototype>
@@ -291,25 +397,24 @@ Default namespace: root/cimv2. Known Adaptec namespace that has these classes: r
                             </applications>
                             <preprocessing>
                                 <step>
-                                    <type>REGEX</type>
-                                    <params>TemperatureIsSupported=([^,]*)(\,|$)
-\1</params>
+                                    <type>JSONPATH</type>
+                                    <params>$.TemperatureIsSupported</params>
                                 </step>
                             </preprocessing>
                             <master_item>
-                                <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n',{$CIM_STORAGE_NAMESPACE},'-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
+                                <key>pywbem-zabbix-wrapper.py[-u,{$CIM_USERNAME},-p,{$CIM_PASSWORD},-s,{HOST.IP},-n,{$CIM_STORAGE_NAMESPACE},-c,{#ITEMCLASS},-i,{#ITEMPATH}]</key>
                             </master_item>
                         </item_prototype>
                         <item_prototype>
-                            <name>Physical drive {#ITEMNAME} full class state</name>
+                            <name>Physical drive {#ITEMNAME} complete JSON data</name>
                             <type>EXTERNAL</type>
-                            <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n',{$CIM_STORAGE_NAMESPACE},'-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
+                            <key>pywbem-zabbix-wrapper.py[-u,{$CIM_USERNAME},-p,{$CIM_PASSWORD},-s,{HOST.IP},-n,{$CIM_STORAGE_NAMESPACE},-c,{#ITEMCLASS},-i,{#ITEMPATH}]</key>
                             <delay>10m</delay>
                             <history>30d</history>
                             <trends>0</trends>
-                            <value_type>CHAR</value_type>
-                            <description>Contains class dump of a certain disk drive entity. Values inside may differ depending on hardware, however, wbemcli returns first the path of queried instance then space then data, so we're stripping path and space in preprocessing.&#13;
-Using CIM_DiskDrive as base class, for better portability. Yet, while discovery does work, getting instances requires exact class - grabbed it with discovery script into {#ITEMCLASS}, used here</description>
+                            <value_type>TEXT</value_type>
+                            <description>Contains JSON dump of a certain disk drive entity. Values inside may differ depending on hardware.&#13;
+Discovery uses CIM_DiskDrive as base class, for better portability, but while requesting items, the exact class name is required - grabbed it with discovery script into {#ITEMCLASS}, used here. Also as a matter of transitioning from wbemcli discovery, used LLD macro supplements to not rebuild all the items and triggers, see LLD macros on the discovery for details.</description>
                             <applications>
                                 <application>
                                     <name>Storage devices</name>
@@ -317,155 +422,49 @@ Using CIM_DiskDrive as base class, for better portability. Yet, while discovery 
                             </applications>
                             <preprocessing>
                                 <step>
-                                    <type>REGEX</type>
-                                    <params>^[^ ]* (.*)
-\1</params>
+                                    <type>JSONPATH</type>
+                                    <params>$[0]</params>
                                 </step>
                             </preprocessing>
                         </item_prototype>
                     </item_prototypes>
                     <trigger_prototypes>
                         <trigger_prototype>
-                            <expression>({Template Module VMware CIM storage monitoring:cim.storage.drive.temperature_supported[{#ITEMNAME}].last()}=1 and {Template Module VMware CIM storage monitoring:cim.storage.drive.temperature[{#ITEMNAME}].last()}&gt;{$HDD_TEMP_WARN}) or ({Template Module VMware CIM storage monitoring:cim.storage.drive.ssd_temperature[{#ITEMNAME}].nodata(1h)}=0 and {Template Module VMware CIM storage monitoring:cim.storage.drive.ssd_temperature[{#ITEMNAME}].last()}&gt;{$SSD_TEMP_WARN})</expression>
+                            <expression>({Template Module VMware CIM storage monitoring v2:cim.storage.drive.temperature_supported[{#ITEMNAME}].last()}=1 and {Template Module VMware CIM storage monitoring v2:cim.storage.drive.temperature[{#ITEMNAME}].last()}&gt;{$HDD_TEMP_WARN}) or ({Template Module VMware CIM storage monitoring v2:cim.storage.drive.ssd_temperature[{#ITEMNAME}].nodata(1h)}=0 and {Template Module VMware CIM storage monitoring v2:cim.storage.drive.ssd_temperature[{#ITEMNAME}].last()}&gt;{$SSD_TEMP_WARN})</expression>
                             <name>Physical drive {#ITEMNAME} is overheating</name>
                             <priority>WARNING</priority>
                         </trigger_prototype>
                         <trigger_prototype>
-                            <expression>{Template Module VMware CIM storage monitoring:cim.storage.drive.mediumerrors[{#ITEMNAME}].last()}&gt;0 or {Template Module VMware CIM storage monitoring:cim.storage.drive.hardwareerrors[{#ITEMNAME}].last()}&gt;0</expression>
+                            <expression>{Template Module VMware CIM storage monitoring v2:cim.storage.drive.mediumerrors[{#ITEMNAME}].last()}&gt;0 or {Template Module VMware CIM storage monitoring v2:cim.storage.drive.hardwareerrors[{#ITEMNAME}].last()}&gt;0</expression>
                             <name>Physical drive {#ITEMNAME} media/hardware errors detected</name>
                             <priority>AVERAGE</priority>
                         </trigger_prototype>
                         <trigger_prototype>
-                            <expression>({Template Module VMware CIM storage monitoring:cim.storage.drive.ssd_smart_flag[{#ITEMNAME}].nodata(1h)}=0 and {Template Module VMware CIM storage monitoring:cim.storage.drive.ssd_smart_flag[{#ITEMNAME}].last()}=1) or ({Template Module VMware CIM storage monitoring:cim.storage.drive.smart_flag[{#ITEMNAME}].nodata(1h)}=0 and {Template Module VMware CIM storage monitoring:cim.storage.drive.smart_flag[{#ITEMNAME}].last()}=1)</expression>
+                            <expression>({Template Module VMware CIM storage monitoring v2:cim.storage.drive.ssd_smart_flag[{#ITEMNAME}].nodata(1h)}=0 and {Template Module VMware CIM storage monitoring v2:cim.storage.drive.ssd_smart_flag[{#ITEMNAME}].last()}=1) or ({Template Module VMware CIM storage monitoring v2:cim.storage.drive.smart_flag[{#ITEMNAME}].nodata(1h)}=0 and {Template Module VMware CIM storage monitoring v2:cim.storage.drive.smart_flag[{#ITEMNAME}].last()}=1)</expression>
                             <name>Physical drive {#ITEMNAME} triggered a SMART flag</name>
                             <priority>AVERAGE</priority>
                         </trigger_prototype>
                     </trigger_prototypes>
-                </discovery_rule>
-                <discovery_rule>
-                    <name>CIM storage volumes discovery</name>
-                    <type>EXTERNAL</type>
-                    <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n',{$CIM_STORAGE_NAMESPACE},'-c','CIM_StorageVolume','--discovery']</key>
-                    <delay>1h</delay>
-                    <lifetime>7d</lifetime>
-                    <item_prototypes>
-                        <item_prototype>
-                            <name>Storage volume {#ITEMNAME} health state</name>
-                            <type>DEPENDENT</type>
-                            <key>cim.storage.volume.health[{#ITEMNAME}]</key>
-                            <delay>0</delay>
-                            <trends>0</trends>
-                            <applications>
-                                <application>
-                                    <name>Storage volumes</name>
-                                </application>
-                            </applications>
-                            <valuemap>
-                                <name>VMware CIM - Health Status</name>
-                            </valuemap>
-                            <preprocessing>
-                                <step>
-                                    <type>REGEX</type>
-                                    <params>HealthState=([^,]*)(\,|$)
-\1</params>
-                                </step>
-                            </preprocessing>
-                            <master_item>
-                                <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n','{$CIM_STORAGE_NAMESPACE}','-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
-                            </master_item>
-                            <trigger_prototypes>
-                                <trigger_prototype>
-                                    <expression>{last()}&gt;=10</expression>
-                                    <name>Storage volume {#ITEMNAME} is degraded</name>
-                                    <priority>HIGH</priority>
-                                    <description>10 = degraded. Anything more, and data loss can/did happen.</description>
-                                </trigger_prototype>
-                            </trigger_prototypes>
-                        </item_prototype>
-                        <item_prototype>
-                            <name>Storage volume {#ITEMNAME} status details</name>
-                            <type>DEPENDENT</type>
-                            <key>cim.storage.volume.health_details[{#ITEMNAME}]</key>
-                            <delay>0</delay>
-                            <trends>0</trends>
-                            <value_type>CHAR</value_type>
-                            <applications>
-                                <application>
-                                    <name>Storage volumes</name>
-                                </application>
-                            </applications>
-                            <preprocessing>
-                                <step>
-                                    <type>REGEX</type>
-                                    <params>StatusDescriptions=([^,]*)(\,|$)
-\1</params>
-                                </step>
-                            </preprocessing>
-                            <master_item>
-                                <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n','{$CIM_STORAGE_NAMESPACE}','-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
-                            </master_item>
-                        </item_prototype>
-                        <item_prototype>
-                            <name>Storage volume {#ITEMNAME} operational status</name>
-                            <type>DEPENDENT</type>
-                            <key>cim.storage.volume.operational_status[{#ITEMNAME}]</key>
-                            <delay>0</delay>
-                            <trends>0</trends>
-                            <applications>
-                                <application>
-                                    <name>Storage volumes</name>
-                                </application>
-                            </applications>
-                            <valuemap>
-                                <name>VMware CIM - Operational Status</name>
-                            </valuemap>
-                            <preprocessing>
-                                <step>
-                                    <type>REGEX</type>
-                                    <params>OperationalStatus=([^,]*)(\,|$)
-\1</params>
-                                </step>
-                            </preprocessing>
-                            <master_item>
-                                <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n','{$CIM_STORAGE_NAMESPACE}','-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
-                            </master_item>
-                            <trigger_prototypes>
-                                <trigger_prototype>
-                                    <expression>{last()}&lt;&gt;2</expression>
-                                    <name>Storage volume {#ITEMNAME} operating abnormally</name>
-                                    <priority>WARNING</priority>
-                                    <description>2 = OK, anything else signifies some abnormal state, review value mappings to check what happened.</description>
-                                </trigger_prototype>
-                            </trigger_prototypes>
-                        </item_prototype>
-                        <item_prototype>
-                            <name>Storage volume {#ITEMNAME} full status</name>
-                            <type>EXTERNAL</type>
-                            <key>wbemcli-zabbix-wrapper.sh['-u',{$CIM_USERNAME},'-p',{$CIM_PASSWORD},'-s',{HOST.IP},'-n','{$CIM_STORAGE_NAMESPACE}','-c',{#ITEMCLASS},'-i',{#ITEMPATH}]</key>
-                            <delay>10m</delay>
-                            <history>30d</history>
-                            <trends>0</trends>
-                            <value_type>CHAR</value_type>
-                            <applications>
-                                <application>
-                                    <name>Storage volumes</name>
-                                </application>
-                            </applications>
-                            <preprocessing>
-                                <step>
-                                    <type>REGEX</type>
-                                    <params>^[^ ]* (.*)
-\1</params>
-                                </step>
-                            </preprocessing>
-                        </item_prototype>
-                    </item_prototypes>
+                    <lld_macro_paths>
+                        <lld_macro_path>
+                            <lld_macro>{#ITEMNAME}</lld_macro>
+                            <path>$.{#INSTANCENAME}</path>
+                        </lld_macro_path>
+                        <lld_macro_path>
+                            <lld_macro>{#ITEMCLASS}</lld_macro>
+                            <path>$.{#CLASSNAME}</path>
+                        </lld_macro_path>
+                        <lld_macro_path>
+                            <lld_macro>{#ITEMPATH}</lld_macro>
+                            <path>$.{#CLASSPATH}</path>
+                        </lld_macro_path>
+                    </lld_macro_paths>
                 </discovery_rule>
             </discovery_rules>
             <macros>
                 <macro>
                     <macro>{$CIM_PASSWORD}</macro>
-                    <value>{$PASSWORD}</value>
+                    <value>CHANGEME</value>
                     <description>Password for CIM_USERNAME</description>
                 </macro>
                 <macro>
@@ -475,7 +474,7 @@ Using CIM_DiskDrive as base class, for better portability. Yet, while discovery 
                 </macro>
                 <macro>
                     <macro>{$CIM_USERNAME}</macro>
-                    <value>{$USERNAME}</value>
+                    <value>zabbix</value>
                     <description>User name to access CIM data</description>
                 </macro>
                 <macro>
